@@ -297,6 +297,15 @@ st.markdown(
         .hero { padding: 22px; }
         .hero-title { font-size:1.4rem; }
     }
+    header[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+}
+
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
     </style>
     """,
     unsafe_allow_html=True,
