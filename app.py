@@ -576,6 +576,66 @@ elif selected_page == "👥 Student directory":
         "STUDENT DIRECTORY", "Find and review student records",
         "Search by student name or ID. The table follows the department and year filters.",
     )
+    # -------------------------- ADD STUDENT FORM --------------------------
+if st.session_state.logged_in_role == "Admin":
+
+    with st.expander("➕ Add New Student", expanded=False):
+
+        with st.form("add_student_form"):
+
+            st.subheader("Add Student Details")
+
+            student_id = st.text_input("Student ID")
+            student_name = st.text_input("Student Name")
+
+            department = st.selectbox(
+                "Department",
+                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "IT"]
+            )
+
+            year = st.selectbox(
+                "Academic Year",
+                ["1", "2", "3", "4"]
+            )
+
+            submitted = st.form_submit_button(
+                "Add Student",
+                use_container_width=True
+            )
+
+            if submitted:
+
+                if not student_id.strip() or not student_name.strip():
+                    st.error("Please enter Student ID and Student Name.")
+
+                elif students["student_id"].astype(str).str.lower().eq(
+                    student_id.strip().lower()
+                ).any():
+                    st.error("Student ID already exists.")
+
+                else:
+                    new_student = pd.DataFrame([{
+                        "student_id": student_id.strip(),
+                        "student_name": student_name.strip(),
+                        "department": department,
+                        "year": year
+                    }])
+
+                    students = pd.concat(
+                        [students, new_student],
+                        ignore_index=True
+                    )
+
+                    students.to_csv(
+                        ROOT / "data" / "students.csv",
+                        index=False
+                    )
+
+                    st.success("Student added successfully!")
+                    st.rerun()
+
+else:
+    st.info("Only Admin can add new students.")
     search = st.text_input(
         "Search students", placeholder="Enter student name or ID...", key="student_search"
     )
