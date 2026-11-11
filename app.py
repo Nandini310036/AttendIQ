@@ -570,135 +570,199 @@ if selected_page == "📊 Overview":
             unsafe_allow_html=True,
         )
 
+
 # ----------------------------- STUDENT DIRECTORY -----------------------------
 elif selected_page == "👥 Student directory":
+
     section(
-        "STUDENT DIRECTORY", "Find and review student records",
+        "STUDENT DIRECTORY",
+        "Find and review student records",
         "Search by student name or ID. The table follows the department and year filters.",
     )
+
     # -------------------------- ADD STUDENT FORM --------------------------
-if st.session_state.logged_in_role == "Admin":
+    if st.session_state.logged_in_role == "Admin":
 
-    with st.expander("➕ Add New Student", expanded=False):
+        with st.expander("➕ Add New Student", expanded=False):
 
-        with st.form("add_student_form"):
+            with st.form("add_student_form"):
 
-            st.subheader("Add Student Details")
+                st.subheader("Add Student Details")
 
-            student_id = st.text_input("Student ID")
-            student_name = st.text_input("Student Name")
+                student_id = st.text_input("Student ID")
+                student_name = st.text_input("Student Name")
 
-            department = st.selectbox(
-                "Department",
-                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "IT"]
-            )
+                department = st.selectbox(
+                    "Department",
+                    ["CSE", "ECE", "EEE", "MECH", "CIVIL", "IT"],
+                )
 
-            year = st.selectbox(
-                "Academic Year",
-                ["1", "2", "3", "4"]
-            )
+                year = st.selectbox(
+                    "Academic Year",
+                    ["1", "2", "3", "4"],
+                )
 
-            submitted = st.form_submit_button(
-                "Add Student",
-                use_container_width=True
-            )
+                submitted = st.form_submit_button(
+                    "Add Student",
+                    use_container_width=True,
+                )
 
-            if submitted:
+                if submitted:
 
-                if not student_id.strip() or not student_name.strip():
-                    st.error("Please enter Student ID and Student Name.")
+                    student_id = student_id.strip()
+                    student_name = student_name.strip()
 
-                elif students["student_id"].astype(str).str.lower().eq(
-                    student_id.strip().lower()
-                ).any():
-                    st.error("Student ID already exists.")
+                    if not student_id or not student_name:
+                        st.error("Please enter Student ID and Student Name.")
 
-                else:
-                    new_student = pd.DataFrame([{
-                        "student_id": student_id.strip(),
-                        "student_name": student_name.strip(),
-                        "department": department,
-                        "year": year
-                    }])
+                    elif students["student_id"].astype(str).str.strip().str.lower().eq(
+                        student_id.lower()
+                    ).any():
+                        st.error("Student ID already exists.")
 
-                    students = pd.concat(
-                        [students, new_student],
-                        ignore_index=True
-                    )
+                    else:
+                        # Preserve all existing CSV columns
+                        new_record = {column: "" for column in students.columns}
 
-                    students.to_csv(
-                        ROOT / "data" / "students.csv",
-                        index=False
-                    )
+                        new_record["student_id"] = student_id
+                        new_record["student_name"] = student_name
+                        new_record["department"] = department
+                        new_record["year"] = year
 
-                    st.success("Student added successfully!")
-                    st.rerun()
+                        new_student = pd.DataFrame([new_record])
 
-else:
-    st.info("Only Admin can add new students.")
+                        updated_students = pd.concat(
+                            [students, new_student],
+                            ignore_index=True,
+                        )
+
+                        updated_students.to_csv(
+                            ROOT / "data" / "students.csv",
+                            index=False,
+                        )
+
+                        get_dashboard_data.clear()
+
+                        st.success("Student added successfully!")
+                        st.rerun()
+
+    else:
+        st.info("Faculty access is read-only. Only Admin can add students.")
+
+    # -------------------------- SEARCH STUDENTS --------------------------
     search = st.text_input(
-        "Search students", placeholder="Enter student name or ID...", key="student_search"
+        "Search students",
+        placeholder="Enter student name or ID...",
+        key="student_search",
     )
+
     directory = filtered.copy()
+
     if search.strip():
         term = search.strip().lower()
+
         directory = directory[
-            directory["student_name"].astype(str).str.lower().str.contains(term, na=False)
-            | directory["student_id"].astype(str).str.lower().str.contains(term, na=False)
+            directory["student_name"].astype(str).str.lower().str.contains(
+                term, na=False
+            )
+            | directory["student_id"].astype(str).str.lower().str.contains(
+                term, na=False
+            )
         ]
 
     directory["attendance_status"] = directory["attendance_percentage"].apply(
-        lambda value: "Below threshold" if value < threshold else "Meeting threshold"
+        lambda value: "Below threshold"
+        if value < threshold
+        else "Meeting threshold"
     )
+
     directory = directory.sort_values("attendance_percentage")
+
     show_cols = [
-        "student_id", "student_name", "department", "year",
-        "attendance_percentage", "attendance_status",
+        "student_id",
+        "student_name",
+        "department",
+        "year",
+        "attendance_percentage",
+        "attendance_status",
     ]
+
     st.caption(f"Showing {len(directory):,} of {len(filtered):,} students")
+
     st.dataframe(
-        directory[show_cols].rename(columns={
-            "student_id": "Student ID", "student_name": "Student name",
-            "department": "Department", "year": "Year",
-            "attendance_percentage": "Attendance (%)", "attendance_status": "Status",
-        }),
+        directory[show_cols].rename(
+            columns={
+                "student_id": "Student ID",
+                "student_name": "Student name",
+                "department": "Department",
+                "year": "Year",
+                "attendance_percentage": "Attendance (%)",
+                "attendance_status": "Status",
+            }
+        ),
         use_container_width=True,
         hide_index=True,
         column_config={
             "Attendance (%)": st.column_config.ProgressColumn(
-                "Attendance (%)", min_value=0, max_value=100, format="%.1f%%"
+                "Attendance (%)",
+                min_value=0,
+                max_value=100,
+                format="%.1f%%",
             )
         },
     )
+
     d1, d2 = st.columns([1, 3])
+
     with d1:
         st.download_button(
             "⬇ Download student CSV",
             data=directory.to_csv(index=False).encode("utf-8"),
-            file_name="filtered_student_summary.csv", mime="text/csv",
-            use_container_width=True, disabled=directory.empty,
+            file_name="filtered_student_summary.csv",
+            mime="text/csv",
+            use_container_width=True,
+            disabled=directory.empty,
         )
+
     with d2:
         st.markdown(
             '<div class="info-strip">Student attendance is calculated as present classes ÷ total recorded classes × 100.</div>',
             unsafe_allow_html=True,
         )
+
+    # -------------------------- STUDENT PROFILE --------------------------
     if not directory.empty:
+
         section("STUDENT PROFILE", "Individual attendance snapshot")
+
         profile_options = directory.apply(
-            lambda row: f"{row['student_id']} · {row['student_name']}", axis=1
+            lambda row: f"{row['student_id']} · {row['student_name']}",
+            axis=1,
         ).tolist()
+
         selected_profile = st.selectbox(
-            "Choose a student", profile_options, key="profile_student"
+            "Choose a student",
+            profile_options,
+            key="profile_student",
         )
+
         profile_id = selected_profile.split(" · ", 1)[0]
-        profile = directory[directory["student_id"].astype(str) == profile_id].iloc[0]
+
+        profile = directory[
+            directory["student_id"].astype(str) == profile_id
+        ].iloc[0]
+
         p1, p2, p3, p4 = st.columns(4)
+
         p1.metric("Student", str(profile["student_name"]))
         p2.metric("Department", str(profile["department"]))
         p3.metric("Academic year", str(profile["year"]))
         p4.metric("Attendance", f"{profile['attendance_percentage']:.1f}%")
-        st.progress(min(max(float(profile["attendance_percentage"]) / 100, 0), 1))
+
+        st.progress(
+            min(max(float(profile["attendance_percentage"]) / 100, 0), 1)
+        )
+
         if profile["attendance_percentage"] < threshold:
             st.markdown(
                 f'<span class="status-chip status-risk">Below {threshold}% threshold</span>',
@@ -709,6 +773,8 @@ else:
                 '<span class="status-chip status-safe">Meeting attendance threshold</span>',
                 unsafe_allow_html=True,
             )
+
+# ------------------------------- RISK PREDICTION -----------------------------
 
 # ------------------------------- RISK PREDICTION -----------------------------
 elif selected_page == "🎯 Risk prediction":
