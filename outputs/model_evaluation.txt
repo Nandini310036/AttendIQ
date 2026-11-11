@@ -1,0 +1,35 @@
+ATTENDANCE RISK MODEL EVALUATION
+================================
+
+Cutoff date: 2026-08-31
+Target: Later-period attendance below 75%
+Features: Early-period attendance and student details
+Dataset: Synthetic demonstration data
+
+Logistic Regression
+              precision    recall  f1-score   support
+
+         0.0       0.84      0.79      0.82        39
+         1.0       0.38      0.45      0.42        11
+
+    accuracy                           0.72        50
+   macro avg       0.61      0.62      0.62        50
+weighted avg       0.74      0.72      0.73        50
+
+Confusion Matrix:
+[[31  8]
+ [ 6  5]]
+
+Random Forest
+              precision    recall  f1-score   support
+
+         0.0       0.89      0.85      0.87        39
+         1.0       0.54      0.64      0.58        11
+
+    accuracy                           0.80        50
+   macro avg       0.72      0.74      0.73        50
+weighted avg       0.81      0.80      0.81        50
+
+Confusion Matrix:
+[[33  6]
+ [ 4  7]]
